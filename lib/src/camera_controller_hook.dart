@@ -53,21 +53,27 @@ class _CameraControllerHook extends Hook<CameraController> {
 
 class _CameraControllerHookState
     extends HookState<CameraController, _CameraControllerHook> {
-  late final CameraController cameraController;
+  late final CameraController _cameraController;
+
   @override
-  CameraController build(BuildContext context) {
-    cameraController = CameraController(
+  void initHook() {
+    _cameraController = CameraController(
       hook.description,
       hook.resolutionPreset,
       enableAudio: hook.enableAudio,
       imageFormatGroup: hook.imageFormatGroup,
     );
-    return cameraController;
+    super.initHook();
+  }
+
+  @override
+  CameraController build(BuildContext context) {
+    return _cameraController;
   }
 
   @override
   void dispose() {
-    cameraController.dispose();
+    _cameraController.dispose();
     super.dispose();
   }
 }
