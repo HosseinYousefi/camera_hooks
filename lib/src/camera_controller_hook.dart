@@ -7,6 +7,7 @@ CameraController useCameraController(
   ResolutionPreset resolutionPreset, {
   bool enableAudio = true,
   ImageFormatGroup? imageFormatGroup,
+  List<Object?>? keys,
 }) {
   return use(
     _CameraControllerHook(
@@ -14,6 +15,7 @@ CameraController useCameraController(
       resolutionPreset,
       enableAudio: enableAudio,
       imageFormatGroup: imageFormatGroup,
+      keys: keys,
     ),
   );
 }
