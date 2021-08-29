@@ -59,13 +59,13 @@ class _CameraControllerHookState
 
   @override
   void initHook() {
+    super.initHook();
     _cameraController = CameraController(
       hook.description,
       hook.resolutionPreset,
       enableAudio: hook.enableAudio,
       imageFormatGroup: hook.imageFormatGroup,
     );
-    super.initHook();
   }
 
   @override
