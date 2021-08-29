@@ -2,7 +2,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
-CameraController useCameraController(
+CameraController? useCameraController(
   CameraDescription description,
   ResolutionPreset resolutionPreset, {
   bool enableAudio = true,
@@ -20,7 +20,7 @@ CameraController useCameraController(
   );
 }
 
-class _CameraControllerHook extends Hook<CameraController> {
+class _CameraControllerHook extends Hook<CameraController?> {
   /// The properties of the camera device controlled by this controller.
   final CameraDescription description;
 
@@ -49,33 +49,74 @@ class _CameraControllerHook extends Hook<CameraController> {
   }) : super(keys: keys);
 
   @override
-  HookState<CameraController, Hook<CameraController>> createState() =>
+  HookState<CameraController?, Hook<CameraController?>> createState() =>
       _CameraControllerHookState();
 }
 
 class _CameraControllerHookState
-    extends HookState<CameraController, _CameraControllerHook> {
-  late final CameraController _cameraController;
+    extends HookState<CameraController?, _CameraControllerHook>
+    with WidgetsBindingObserver {
+  CameraController? _cameraController;
 
-  @override
-  void initHook() {
-    super.initHook();
+  void initController() async {
+    final controller = _cameraController;
+    _cameraController = null;
+    setState(() {});
+    await controller?.dispose();
     _cameraController = CameraController(
       hook.description,
       hook.resolutionPreset,
       enableAudio: hook.enableAudio,
       imageFormatGroup: hook.imageFormatGroup,
     );
+    _cameraController!.addListener(() {
+      setState(() {});
+    });
+    await _cameraController!.initialize();
   }
 
   @override
-  CameraController build(BuildContext context) {
+  void initHook() {
+    super.initHook();
+    _ambiguate(WidgetsBinding.instance)?.addObserver(this);
+    initController();
+  }
+
+  @override
+  void didUpdateHook(_CameraControllerHook oldHook) {
+    if (oldHook.description != hook.description ||
+        oldHook.enableAudio != hook.enableAudio ||
+        oldHook.imageFormatGroup != hook.imageFormatGroup ||
+        oldHook.resolutionPreset != hook.resolutionPreset) {
+      initController();
+    }
+  }
+
+  @override
+  CameraController? build(BuildContext context) {
     return _cameraController;
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // App state changed before we got the chance to initialize.
+    if (!(_cameraController?.value.isInitialized ?? false)) {
+      return;
+    }
+
+    if (state == AppLifecycleState.inactive) {
+      _cameraController?.dispose();
+    } else if (state == AppLifecycleState.resumed) {
+      initController();
+    }
+  }
+
+  @override
   void dispose() {
-    _cameraController.dispose();
+    _ambiguate(WidgetsBinding.instance)?.removeObserver(this);
+    _cameraController?.dispose();
     super.dispose();
   }
 }
+
+T? _ambiguate<T>(T? value) => value;
